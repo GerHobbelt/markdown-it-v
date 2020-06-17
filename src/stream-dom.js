@@ -1,6 +1,6 @@
-import { escapeHtml } from 'markdown-it/lib/common/utils'
-import * as crossCreateElement from './cross-create-element'
-import _ from 'lodash'
+import { escapeHtml } from '@gerhobbelt/markdown-it/lib/common/utils';
+import * as crossCreateElement from './cross-create-element';
+import _ from 'lodash';
 
 const voidElements = [
   'base',
@@ -15,126 +15,128 @@ const voidElements = [
   'area',
   'col',
   'input',
-  'command',
-]
+  'command'
+];
 
-export const voidTag = Symbol('void')
+export const voidTag = Symbol('void');
 
 export class Node {
   constructor(tagName, attrs = {}, parent = null, ...children) {
-    this.tagName = tagName
-    this.attrs =
-      Object.entries(attrs).filter(([key, value]) => key !== '__html')
-      |> _.fromPairs
-    this.innerHTML = attrs.__html
-    this.parent = parent
-    this.children = children
+    this.tagName = tagName;
+    this.attrs = _.fromPairs(Object.entries(attrs).filter(([ key, value ]) => key !== '__html'));
+    this.innerHTML = attrs.__html;
+    this.parent = parent;
+    this.children = children;
   }
   renderAttrsToHTML() {
     return Object.entries(this.attrs)
-      .map(([key, value]) => `${escapeHtml(key)}="${escapeHtml(value)}"`)
-      .join(' ')
+      .map(([ key, value ]) => `${escapeHtml(key)}="${escapeHtml(value)}"`)
+      .join(' ');
   }
   renderInnerHTML(xhtmlOut = false) {
     if (voidElements.includes(this.tagName)) {
-      return ''
+      return '';
     } else if (this.innerHTML == null) {
       return this.children
         .map(child =>
           typeof child === 'string'
             ? escapeHtml(child)
-            : child.renderToHTML(xhtmlOut),
+            : child.renderToHTML(xhtmlOut)
         )
-        .join('')
-    } else {
-      return this.innerHTML
+        .join('');
     }
+    return this.innerHTML;
+
   }
   renderToHTML(xhtmlOut = false) {
     if (this.tagName === voidTag) {
-      return this.renderInnerHTML(xhtmlOut)
+      return this.renderInnerHTML(xhtmlOut);
     }
-    const attrsString = this.renderAttrsToHTML()
-    let result = '<' + this.tagName
+    const attrsString = this.renderAttrsToHTML();
+    let result = '<' + this.tagName;
     if (attrsString) {
-      result += ' ' + attrsString
+      result += ' ' + attrsString;
     }
     if (voidElements.includes(this.tagName)) {
       if (xhtmlOut) {
-        result += ' />'
+        result += ' />';
       } else {
-        result += '>'
+        result += '>';
       }
     } else {
-      result += '>'
-      result += this.renderInnerHTML(xhtmlOut)
-      result += `</${this.tagName}>`
+      result += '>';
+      result += this.renderInnerHTML(xhtmlOut);
+      result += `</${this.tagName}>`;
     }
-    return result
+    return result;
   }
   renderInnerVDOM(h) {
-    return (
-      this.children.map(child =>
-        typeof child === 'string' ? child : child.renderToVDOM(h),
-      ) |> _.flatten
-    )
+    return _.flatten(
+      (
+        this.children.map(child =>
+          typeof child === 'string' ? child : child.renderToVDOM(h)
+        )
+      )
+    );
   }
   renderToVDOM(h) {
     if (this.tagName === voidTag) {
       if (this.innerHTML != null) {
-        throw new Error('`void` tag cannot contain innerHTML')
+        throw new Error('`void` tag cannot contain innerHTML');
       }
-      return this.renderInnerVDOM(h)
-    } else {
-      return h(
-        this.tagName,
-        this.attrs,
-        this.innerHTML,
-        this.renderInnerVDOM(h),
-      )
+      return this.renderInnerVDOM(h);
     }
+    return h(
+      this.tagName,
+      this.attrs,
+      this.innerHTML,
+      this.renderInnerVDOM(h)
+    );
+
   }
   dropParent() {
-    this.parent = null
+    this.parent = null;
   }
   dropParents() {
-    this.dropParent()
+    this.dropParent();
     this.children
       .filter(el => typeof el !== 'string')
-      .forEach(el => el.dropParents())
+      .forEach(el => el.dropParents());
   }
 }
 
 export default class StreamDom {
-  currentNode = new Node(voidTag)
-  xhtmlOut = false
+  constructor() {
+    this.currentNode = new Node(voidTag);
+    this.xhtmlOut = false;
+  }
   openTag(tagName, attrs) {
-    const newNode = new Node(tagName, attrs, this.currentNode)
-    this.currentNode.children.push(newNode)
-    this.currentNode = newNode
+    const newNode = new Node(tagName, attrs, this.currentNode);
+    this.currentNode.children.push(newNode);
+    this.currentNode = newNode;
   }
   closeTag() {
-    this.currentNode = this.currentNode.parent
+    this.currentNode = this.currentNode.parent;
   }
   appendText(text) {
-    this.currentNode.children.push(text)
+    this.currentNode.children.push(text);
   }
   toHTML(xhtmlOut = this.xhtmlOut) {
-    return this.currentNode.renderToHTML(xhtmlOut)
+    return this.currentNode.renderToHTML(xhtmlOut);
   }
   toVue(createElement) {
     return this.currentNode.renderToVDOM(
-      crossCreateElement.createElementVueFactory(createElement),
-    )
+      crossCreateElement.createElementVueFactory(createElement)
+    );
   }
   toReact(createElement) {
     return this.currentNode.renderToVDOM(
-      crossCreateElement.createElementReactFactory(createElement),
-    )
+      crossCreateElement.createElementReactFactory(createElement)
+    );
   }
   toNative(document) {
     return this.currentNode
       .renderToVDOM(crossCreateElement.createElementNativeFactory(document))
-      .map(el => (typeof el === 'string' ? document.createTextNode(el) : el))
+      .map(el => (typeof el === 'string' ? document.createTextNode(el) : el));
   }
 }

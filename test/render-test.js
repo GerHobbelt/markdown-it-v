@@ -1,57 +1,57 @@
 /* eslint-disable no-console */
 
-const SDomRenderer = require('./render-sdom')
-const load = require('markdown-it-testgen').load
-const p = require('path')
-const chai = require('chai')
-chai.should()
+const SDomRenderer = require('./render-sdom');
+const load = require('@gerhobbelt/markdown-it-testgen').load;
+const p = require('path');
+const chai = require('chai');
+chai.should();
 
-describe('test rendering in browser', function() {
-  this.timeout(30000)
-  const sdr = new SDomRenderer()
-  before(function() {
-    return sdr.open()
-  })
-  after(function() {
-    return sdr.close()
-  })
+describe('test rendering in browser', function () {
+  this.timeout(30000);
+  const sdr = new SDomRenderer();
+  before(function () {
+    return sdr.open();
+  });
+  after(function () {
+    return sdr.close();
+  });
   function testgen(path, options = {}, normalize = x => x, mditOption) {
-    load(path, options, function(data) {
-      data.meta = data.meta || {}
-      var desc = data.meta.desc || p.relative(path, data.file)
-      ;(data.meta.skip ? describe.skip : describe)(desc, function() {
-        data.fixtures.forEach(function(fixture) {
+    load(path, options, function (data) {
+      data.meta = data.meta || {};
+      let desc = data.meta.desc || p.relative(path, data.file)
+      ;(data.meta.skip ? describe.skip : describe)(desc, function () {
+        data.fixtures.forEach(function (fixture) {
           it(
             fixture.header && options.header
               ? fixture.header
               : 'line ' + (fixture.first.range[0] - 1),
-            function() {
-              const excepted = normalize(fixture.second.text)
-              const p1 = sdr.render(mditOption, fixture.first.text)
-              const p2 = sdr.renderHTML(excepted)
-              return Promise.all([p1, p2])
-                .then(function([actual, excepted]) {
+            function () {
+              const excepted = normalize(fixture.second.text);
+              const p1 = sdr.render(mditOption, fixture.first.text);
+              const p2 = sdr.renderHTML(excepted);
+              return Promise.all([ p1, p2 ])
+                .then(function ([ actual, excepted ]) {
                   actual.should.deep.equal({
-                    native: excepted,
+                    'native': excepted,
                     vue: excepted,
-                    react: excepted,
-                  })
+                    react: excepted
+                  });
                 })
                 .catch(err => {
                   if (
                     err.message.split('\n')[0] !==
                     'Evaluation failed: Error: `void` tag cannot contain innerHTML'
                   ) {
-                    throw err
+                    throw err;
                   } else {
-                    console.debug('`void` tag contains innerHTML. Skipped.')
+                    console.debug('`void` tag contains innerHTML. Skipped.');
                   }
-                })
-            },
-          )
-        })
-      })
-    })
+                });
+            }
+          );
+        });
+      });
+    });
   }
   testgen(
     p.join(__dirname, 'fixtures/commonmark/good.txt'),
@@ -59,14 +59,14 @@ describe('test rendering in browser', function() {
     text =>
       text.replace(
         /<blockquote>\n<\/blockquote>/g,
-        '<blockquote></blockquote>',
+        '<blockquote></blockquote>'
       ),
-    'commonmark',
-  )
+    'commonmark'
+  );
   testgen(p.join(__dirname, 'fixtures/markdown-it'), {}, x => x, {
     html: true,
     langPrefix: '',
     typographer: true,
-    linkify: true,
-  })
-})
+    linkify: true
+  });
+});

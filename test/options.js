@@ -1,23 +1,22 @@
-'use strict'
 
-var path = require('path')
+let path = require('path');
 
-var generate = require('markdown-it-testgen')
+let generate = require('@gerhobbelt/markdown-it-testgen');
 
-describe('markdown-it', function() {
-  var md = require('markdown-it')({
+describe('markdown-it', function () {
+  let md = require('@gerhobbelt/markdown-it')({
     html: true,
     langPrefix: '',
     typographer: true,
     linkify: true,
 
     highlight(source, lang, slf) {
-      slf.sDom.openTag('highlight-component', { source })
+      slf.sDom.openTag('highlight-component', { source });
     },
-    highlightNoWrappingEls: true,
-  })
+    highlightNoWrappingEls: true
+  });
 
-  require('./inject')(md)
+  require('./inject')(md);
 
-  generate(path.join(__dirname, 'fixtures/options'), md)
-})
+  generate(path.join(__dirname, 'fixtures/options'), md);
+});

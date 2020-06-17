@@ -1,2 +1,2 @@
-export { default as MarkdownIt } from 'markdown-it'
-export { default as MarkdownItV } from './index'
+export { default as MarkdownIt } from '@gerhobbelt/markdown-it';
+export { default as MarkdownItV } from './index';
